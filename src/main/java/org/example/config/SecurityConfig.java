@@ -29,29 +29,32 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                // 1. Fixed CORS configuration
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        // 2. Public Endpoints
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/events/**").permitAll()
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow pre-flight
 
-                        // 3. Admin Only Endpoints (Using "ADMIN" without ROLE_ prefix)
-                        .requestMatchers(HttpMethod.POST, "/events/**").hasRole("ADMIN")
+                        // Public - no login needed
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/events").permitAll()
+
+                        // Requires login - location based + joining
+                        .requestMatchers(HttpMethod.GET, "/events/nearby").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/events/*/join").authenticated()
+                        .requestMatchers("/user/**").authenticated()
+
+                        .requestMatchers(HttpMethod.GET, "/events/{id}").permitAll()
+
+                        // Admin only
+                        .requestMatchers(HttpMethod.POST, "/events").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/events/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/events/**").hasRole("ADMIN")
                         .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/events/*/join").hasAuthority("ROLE_USER")
-                        .requestMatchers("/events/*/join").authenticated()
 
-                        // 4. Everything else requires login
+                        // Everything else requires login
                         .anyRequest().authenticated()
                 )
-                // 5. Stateless sessions for JWT
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        // 6. Add JWT Filter
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -68,7 +71,6 @@ public class SecurityConfig {
             org.example.models.User user = repo.findByEmail(email)
                     .orElseThrow(() -> new org.springframework.security.core.userdetails.UsernameNotFoundException("User not found"));
 
-            // This ensures the role is clean before Spring adds "ROLE_"
             String cleanRole = user.getRole().toUpperCase().replace("ROLE_", "").trim();
 
             return org.springframework.security.core.userdetails.User.builder()
@@ -82,7 +84,6 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Allow all origins for testing, but with specific patterns for compatibility
         config.setAllowedOriginPatterns(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control"));

@@ -1,17 +1,24 @@
 package org.example.services;
+
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 @Service
 public class WeatherService {
-    private final String API_KEY = "1048a36adf806e515a7bb469ba37c63e";
+
+    @Value("${openweather.api.key}")
+    private String apiKey;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     public String getWeatherDescription(Double lat, Double lon) {
         try {
-
-            String url = String.format("https://api.openweathermap.org/data/2.5/weather?lat=%s&lon=%s&appid=%s", lat, lon, API_KEY);
+            String url = String.format(
+                    "https://api.openweathermap.org/data/2.5/weather?lat=%s&lon=%s&appid=%s",
+                    lat, lon, apiKey
+            );
 
             String response = restTemplate.getForObject(url, String.class);
 
