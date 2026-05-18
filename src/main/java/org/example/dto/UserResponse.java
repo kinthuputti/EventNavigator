@@ -1,9 +1,13 @@
 package org.example.dto;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.example.models.User;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -15,6 +19,7 @@ public class UserResponse {
     private String email;
     private String role;
     private String location;
+    private List<Long> joinedEventIds;
 
     public UserResponse(User user) {
         this.id = user.getId();
@@ -22,5 +27,9 @@ public class UserResponse {
         this.email = user.getEmail();
         this.role = user.getRole();
         this.location = user.getLocation();
+        this.joinedEventIds = user.getJoinedEvents()
+                .stream()
+                .map(event -> event.getId())
+                .collect(Collectors.toList());
     }
 }

@@ -34,6 +34,7 @@ public class SecurityConfig {
 
                         // Public - no login needed
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/events").permitAll()
 
@@ -49,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/events/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/events/**").hasRole("ADMIN")
                         .requestMatchers("/admin/**").hasRole("ADMIN")
+
 
                         // Everything else requires login
                         .anyRequest().authenticated()

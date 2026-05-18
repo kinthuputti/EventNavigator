@@ -1,6 +1,7 @@
 package org.example.controllers;
 
 import org.example.models.Event;
+import org.example.models.EventNotification;
 import org.example.models.User;
 import org.example.repositories.EventRepository;
 import org.example.repositories.UserRepository;
@@ -8,6 +9,7 @@ import org.example.services.ExternalEventService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.List;
 @RestController
@@ -16,12 +18,14 @@ public class EventController {
     private final EventRepository eventRepository;
     private final ExternalEventService externalEventService ;
     private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    public EventController(EventRepository eventRepository,ExternalEventService externalEventService,UserRepository userRepository) {
+    public EventController(EventRepository eventRepository,ExternalEventService externalEventService,UserRepository userRepository, SimpMessagingTemplate messagingTemplate) {
         this.eventRepository = eventRepository;
         this.externalEventService = externalEventService;
         this.userRepository = userRepository;
+        this.messagingTemplate=messagingTemplate;
     }
     @PostMapping
     public ResponseEntity<Event> createEvent(@RequestBody Event event) {
@@ -122,6 +126,17 @@ public class EventController {
         event.getAttendees().add(user);
         event.setCurrentAttendees(event.getCurrentAttendees() + 1);
         eventRepository.save(event);
+
+        user.getJoinedEvents().add(event);
+        userRepository.save(user);
+
+        // Broadcast WebSocket notification
+        EventNotification notification = new EventNotification(
+                "Someone just joined this event!",
+                event.getTitle(),
+                user.getName()
+        );
+        messagingTemplate.convertAndSend("/topic/events/" + id, notification);
 
         return ResponseEntity.ok("Successfully joined: " + event.getTitle());
     }
