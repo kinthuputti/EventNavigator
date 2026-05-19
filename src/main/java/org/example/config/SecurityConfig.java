@@ -31,28 +31,18 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-
-                        // Public - no login needed
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/events").permitAll()
-
-                        // Requires login - location based + joining
                         .requestMatchers(HttpMethod.GET, "/events/nearby").authenticated()
                         .requestMatchers(HttpMethod.POST, "/events/*/join").authenticated()
                         .requestMatchers("/user/**").authenticated()
-
                         .requestMatchers(HttpMethod.GET, "/events/{id}").permitAll()
-
-                        // Admin only
                         .requestMatchers(HttpMethod.POST, "/events").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/events/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/events/**").hasRole("ADMIN")
                         .requestMatchers("/admin/**").hasRole("ADMIN")
-
-
-                        // Everything else requires login
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
@@ -86,10 +76,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-
         config.setAllowedOrigins(List.of("https://eventnavigator-frontend.vercel.app"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control"));
+        config.setAllowedHeaders(List.of("*")); // ✅ fixed
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
